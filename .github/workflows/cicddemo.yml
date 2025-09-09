@@ -1,0 +1,48 @@
+name: CICDDEMO
+on:
+  push:
+    branches: [ "test" ]
+    paths:
+      - "test_cases.py"
+      - "calc.py"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt || true  # Ignore if requirements.txt is missing
+
+      - name: Run unit tests (test_cases.py)
+        run: python -m unittest -v test_cases.py
+
+      - name: Run calc.py test
+        run: python calc.py
+
+  deploy:
+    needs: test
+    if: ${{ needs.test.result == 'success' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Sync dev → production
+        run: |
+          git config user.name "${GITHUB_ACTOR}"
+          git config user.email "${GITHUB_ACTOR}@users.noreply.github.com"
+          git fetch origin
+          git checkout -B test
+          git reset --hard origin/main
+          git push origin test --force

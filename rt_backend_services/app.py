@@ -1,4 +1,3 @@
-
 from flask import Flask, jsonify, request, Blueprint
 from config import mongo_uri
 from pymongo import MongoClient
